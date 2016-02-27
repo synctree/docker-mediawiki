@@ -8,7 +8,7 @@ others.
 
 # How to use this image
 
-    docker run --name some-mediawiki --link some-mysql:mysql -d synctree/mediawiki
+    docker run --name some-mediawiki --link some-mysql:mysql -d spwilson2/mediawiki
 
 The following environment variables are also honored for configuring your
 MediaWiki instance:
@@ -29,11 +29,16 @@ To use with an external database server, use `MEDIAWIKI_DB_HOST` (along with
 `MEDIAWIKI_DB_USER` and `MEDIAWIKI_DB_PASSWORD` if necessary):
 
     docker run --name some-mediawiki -e MEDIAWIKI_DB_HOST=10.0.0.1:3306 \
-        -e MEDIAWIKI_DB_USER=app -e MEDIAWIKI_DB_PASSWORD=secure synctree/mediawiki
+        -e MEDIAWIKI_DB_USER=app -e MEDIAWIKI_DB_PASSWORD=secure spwilson2/rpi-mediawiki
 
 If you'd like to be able to access the instance from the host without the
 container's IP, standard port mappings can be used:
 
-    docker run --name some-mediawiki --link some-mysql:mysql -p 8080:80 -d synctree/mediawiki
+    docker run --name some-mediawiki --link some-mysql:mysql -p 8080:80 -d spwilson2/rpi-mediawiki
 
 Then, access it via `http://localhost:8080` or `http://host-ip:8080` in a browser.
+
+Once you have set up your media wiki, you'll need to add the LocalSettings.php file output to
+the docker container.
+
+    docker run --name some-mediawiki -v /path/on-docker-host/to/LocalSettings.php:/var/www-shared/html/LocalSettings.php --link some-mysql:mysql -d spwilson2/rpi-mediawiki
