@@ -15,6 +15,8 @@ RUN set -x; \
     && apt-get purge -y --auto-remove g++ libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pear install mail && pear install net_smtp
+
 RUN docker-php-ext-install mysqli opcache
 
 RUN set -x; \
