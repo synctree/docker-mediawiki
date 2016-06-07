@@ -2,6 +2,10 @@
 
 set -e
 
+# Always update the certificate store.
+/usr/sbin/update-ca-certificates
+
+
 : ${MEDIAWIKI_SITE_NAME:=MediaWiki}
 
 if [ -z "$MEDIAWIKI_DB_HOST" -a -z "$MYSQL_PORT_3306_TCP" ]; then
@@ -35,6 +39,12 @@ if ! [ -e index.php -a -e includes/DefaultSettings.php ]; then
 	fi
 	tar cf - --one-file-system -C /usr/src/mediawiki . | tar xf -
 	echo >&2 "Complete! MediaWiki has been successfully copied to $(pwd)"
+fi
+
+if ! [ -d /var/www/html/extensions/LdapAuthentication ]; then
+	echo >&2 "Ldap extension not found, copying version $LDAP_VERSION to extensions..."
+	mkdir /var/www/html/extensions/LdapAuthentication
+	cp -r /var/tmp/stage/mediawiki-extensions-LdapAuthentication/* /var/www/html/extensions/LdapAuthentication
 fi
 
 : ${MEDIAWIKI_SHARED:=/var/www-shared/html}

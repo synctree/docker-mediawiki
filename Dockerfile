@@ -1,8 +1,12 @@
 FROM php:5.6-apache
 MAINTAINER Synctree App Force <appforce+docker@synctree.com>
 
-ENV MEDIAWIKI_VERSION 1.24
-ENV MEDIAWIKI_FULL_VERSION 1.24.2
+ENV MEDIAWIKI_VERSION 1.26
+ENV MEDIAWIKI_FULL_VERSION 1.26.3
+ENV LDAP_VERSION REL1_26
+
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN set -x; \
     apt-get update \
@@ -10,6 +14,9 @@ RUN set -x; \
         g++ \
         libicu52 \
         libicu-dev \
+        libldap2-dev \
+        imagemagick \
+        git \
     && pecl install intl \
     && echo extension=intl.so >> /usr/local/etc/php/conf.d/ext-intl.ini \
     && apt-get purge -y --auto-remove g++ libicu-dev \
@@ -17,10 +24,8 @@ RUN set -x; \
 
 RUN docker-php-ext-install mysqli opcache
 
-RUN set -x; \
-    apt-get update \
-    && apt-get install -y --no-install-recommends imagemagick \
-    && rm -rf /var/lib/apt/lists/*
+RUN docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/
+RUN docker-php-ext-install ldap
 
 RUN a2enmod rewrite
 
@@ -44,6 +49,21 @@ RUN MEDIAWIKI_DOWNLOAD_URL="https://releases.wikimedia.org/mediawiki/$MEDIAWIKI_
 
 COPY apache/mediawiki.conf /etc/apache2/
 RUN echo Include /etc/apache2/mediawiki.conf >> /etc/apache2/apache2.conf
+
+RUN mkdir /var/tmp/stage && cd /var/tmp/stage && git clone -b $LDAP_VERSION https://github.com/wikimedia/mediawiki-extensions-LdapAuthentication.git
+RUN mkdir /var/log/mediawiki
+
+# Install support for emailing.
+RUN pear install Auth_SASL
+RUN pear install net_smtp
+RUN pear install mail
+
+# Read about the LDAP setup here: https://www.mediawiki.org/wiki/Extension:LDAP_Authentication/Requirements
+# You basically need to stick your own .crt file in /usr/local/share/ca-certificates and restart the container.
+# You can get the certificate by issuing "openssl s_client -showcerts -connect <yourserver>:636"
+RUN echo "TLS_CACERTDIR   /etc/ssl/certs" >> /etc/ldap/ldap.conf
+
+VOLUME ["/usr/local/share/ca-certificates"]
 
 COPY docker-entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
